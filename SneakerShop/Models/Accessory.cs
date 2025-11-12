@@ -2,6 +2,9 @@
 
 public class Accessory : Product
 {
+    private static readonly List<Accessory> _extent = new List<Accessory>();
+    public static IReadOnlyList<Accessory> Extent => _extent.AsReadOnly();
+    
     private string _type;
 
     public string Type
@@ -29,5 +32,7 @@ public class Accessory : Product
         Material = material;
         Type = type;
         Compatibilities = compatibilities ?? Array.Empty<Product>();
+        
+        _extent.Add(this);
     }
 }

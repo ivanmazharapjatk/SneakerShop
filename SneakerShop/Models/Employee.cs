@@ -2,6 +2,9 @@
 {
     public class Employee
     {
+        private static readonly List<Employee> _extent = new List<Employee>();
+        public static IReadOnlyList<Employee> Extent => _extent.AsReadOnly();
+        
         private string _name;
         private string _surname;
         private string _position;
@@ -76,6 +79,8 @@
             Position = position;
             ClearanceLevel = clearanceLevel;
             HireDate = hireDate;
+            
+            _extent.Add(this);
         }
     }
 }

@@ -2,6 +2,9 @@
 
 public class Sneaker : Product
 {
+    private static readonly List<Sneaker> _extent = new List<Sneaker>();
+    public static IReadOnlyList<Sneaker> Extent => _extent.AsReadOnly();
+    
     private string _collection;
     private int _size;
 
@@ -39,5 +42,7 @@ public class Sneaker : Product
         Material = material;
         Collection = collection;
         Size = size; 
+        
+        _extent.Add(this);
     }
 }
