@@ -5,6 +5,11 @@
         private static readonly List<Employee> _extent = new List<Employee>();
         public static IReadOnlyList<Employee> Extent => _extent.AsReadOnly();
         
+        public static void ClearExtent()
+        {
+            _extent.Clear();
+        }
+        
         private string _name;
         private string _surname;
         private string _position;
