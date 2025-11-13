@@ -5,6 +5,11 @@ public class Sneaker : Product
     private static readonly List<Sneaker> _extent = new List<Sneaker>();
     public static IReadOnlyList<Sneaker> Extent => _extent.AsReadOnly();
     
+    public static void ClearExtent()
+    {
+        _extent.Clear();
+    }
+    
     private string _collection;
     private int _size;
 
