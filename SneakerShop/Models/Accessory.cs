@@ -5,6 +5,11 @@ public class Accessory : Product
     private static readonly List<Accessory> _extent = new List<Accessory>();
     public static IReadOnlyList<Accessory> Extent => _extent.AsReadOnly();
     
+    public static void ClearExtent()
+    {
+        _extent.Clear();
+    }
+    
     private string _type;
 
     public string Type
