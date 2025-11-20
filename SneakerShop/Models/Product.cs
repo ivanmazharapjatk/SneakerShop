@@ -1,7 +1,24 @@
-﻿namespace SneakerShop.Models
+﻿using System;
+using System.Collections.Generic;
+
+namespace SneakerShop.Models
 {
     public abstract class Product
     {
+        // CLASS EXTENT FOR ALL PRODUCTS (all subclasses)
+        private static readonly List<Product> _extent = new();
+        public static IReadOnlyList<Product> Extent => _extent.AsReadOnly();
+
+        public static void ClearExtent()
+        {
+            _extent.Clear();
+        }
+        
+        protected Product()
+        {
+            _extent.Add(this);
+        }
+
         private string _name;
         private string _category;
         private string _color;

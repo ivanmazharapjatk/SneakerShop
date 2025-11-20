@@ -1,9 +1,46 @@
-﻿namespace SneakerShop.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+
+namespace SneakerShop.Models;
 
 public class Promocode
 {
-    private static readonly List<Promocode> _extent = new List<Promocode>();
+    private static readonly List<Promocode> _extent = new();
     public static IReadOnlyList<Promocode> Extent => _extent.AsReadOnly();
+
+    private const string ExtentFilePath = "PromocodeExtent.json";
+
+    public static void ClearExtent()
+    {
+        _extent.Clear();
+    }
+
+    public static void SaveExtent()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        var json = JsonSerializer.Serialize(_extent, options);
+        File.WriteAllText(ExtentFilePath, json);
+    }
+
+    public static void LoadExtent()
+    {
+        if (!File.Exists(ExtentFilePath))
+        {
+            return;
+        }
+
+        ClearExtent();
+
+        var json = File.ReadAllText(ExtentFilePath);
+        
+        _ = JsonSerializer.Deserialize<List<Promocode>>(json);
+    }
     
     private string _code;
     private int _numberOfUses;

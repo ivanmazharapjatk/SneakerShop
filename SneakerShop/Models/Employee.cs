@@ -1,15 +1,50 @@
-﻿namespace SneakerShop.Models
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+
+namespace SneakerShop.Models
 {
     public class Employee
     {
-        private static readonly List<Employee> _extent = new List<Employee>();
+        // CLASS EXTENT FOR EMPLOYEE
+        private static readonly List<Employee> _extent = new();
         public static IReadOnlyList<Employee> Extent => _extent.AsReadOnly();
         
+        private const string ExtentFilePath = "EmployeeExtent.json";
+
         public static void ClearExtent()
         {
             _extent.Clear();
         }
         
+        // Saves the class extent of Employee to a JSON file
+        public static void SaveExtent()
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+
+            var json = JsonSerializer.Serialize(_extent, options);
+            File.WriteAllText(ExtentFilePath, json);
+        }
+        
+        // Loads the class extent of Employee from a JSON file
+        public static void LoadExtent()
+        {
+            if (!File.Exists(ExtentFilePath))
+            {
+                return;
+            }
+
+            ClearExtent();
+
+            var json = File.ReadAllText(ExtentFilePath);
+
+            var _ = JsonSerializer.Deserialize<List<Employee>>(json);
+        }
+
         private string _name;
         private string _surname;
         private string _position;
@@ -72,7 +107,9 @@
             set
             {
                 if (value < 1 || value > 3)
-                    throw new ArgumentOutOfRangeException(nameof(ClearanceLevel), "Clearance level must be between 1 and 3.");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(ClearanceLevel),
+                        "Clearance level must be between 1 and 3.");
                 _clearanceLevel = value;
             }
         }
@@ -84,7 +121,7 @@
             Position = position;
             ClearanceLevel = clearanceLevel;
             HireDate = hireDate;
-            
+
             _extent.Add(this);
         }
     }

@@ -1,15 +1,52 @@
-﻿namespace SneakerShop.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace SneakerShop.Models;
 
 public class Accessory : Product
 {
-    private static readonly List<Accessory> _extent = new List<Accessory>();
+    // CLASS EXTENT FOR ACCESSORY
+    private static readonly List<Accessory> _extent = new();
     public static IReadOnlyList<Accessory> Extent => _extent.AsReadOnly();
     
+    private const string ExtentFilePath = "AccessoryExtent.json";
+
     public static void ClearExtent()
     {
         _extent.Clear();
     }
     
+    // Saves the class extent of Accessory to a JSON file
+    public static void SaveExtent()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        var json = JsonSerializer.Serialize(_extent, options);
+        File.WriteAllText(ExtentFilePath, json);
+    }
+    
+    // Loads the class extent of Accessory from a JSON file
+    public static void LoadExtent()
+    {
+        if (!File.Exists(ExtentFilePath))
+        {
+            return;
+        }
+        
+        ClearExtent();
+        Product.ClearExtent();
+
+        var json = File.ReadAllText(ExtentFilePath);
+        
+        var _ = JsonSerializer.Deserialize<List<Accessory>>(json);
+    }
+
     private string _type;
 
     public string Type
@@ -22,13 +59,21 @@ public class Accessory : Product
             _type = value;
         }
     }
-
-    public Product[] Compatibilities { get; set; } = Array.Empty<Product>();
     
-    public Accessory(string name, decimal price,
-        string category, bool available,
-        string color, string material,
-        string type, Product[]? compatibilities = null) {
+    [JsonIgnore]
+    public Product[] Compatibilities { get; set; } = Array.Empty<Product>();
+
+    public Accessory(
+        string name,
+        decimal price,
+        string category,
+        bool available,
+        string color,
+        string material,
+        string type,
+        Product[]? compatibilities = null
+    ) : base()
+    {
         Name = name;
         Price = price;
         Category = category;
@@ -37,7 +82,7 @@ public class Accessory : Product
         Material = material;
         Type = type;
         Compatibilities = compatibilities ?? Array.Empty<Product>();
-        
+
         _extent.Add(this);
     }
 }

@@ -1,9 +1,46 @@
-﻿namespace SneakerShop.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+
+namespace SneakerShop.Models;
 
 public class Review
 {
-    private static readonly List<Review> _extent = new List<Review>();
+    private static readonly List<Review> _extent = new();
     public static IReadOnlyList<Review> Extent => _extent.AsReadOnly();
+
+    private const string ExtentFilePath = "ReviewExtent.json";
+
+    public static void ClearExtent()
+    {
+        _extent.Clear();
+    }
+
+    public static void SaveExtent()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        var json = JsonSerializer.Serialize(_extent, options);
+        File.WriteAllText(ExtentFilePath, json);
+    }
+
+    public static void LoadExtent()
+    {
+        if (!File.Exists(ExtentFilePath))
+        {
+            return;
+        }
+
+        ClearExtent();
+
+        var json = File.ReadAllText(ExtentFilePath);
+        
+        _ = JsonSerializer.Deserialize<List<Review>>(json);
+    }
 
     private int _rating;
     private string _header = "";
