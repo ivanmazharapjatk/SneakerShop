@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Linq;
 using SneakerShop.Models;
 using SneakerShop.Enums;
 
@@ -12,8 +13,11 @@ public class SneakerShopUnitTests
     {
         Sneaker.ClearExtent();
         Accessory.ClearExtent();
+        Brand.ClearBrands();
         Employee.ClearExtent();
         Product.ClearExtent();
+        Order.ClearOrders();
+        Refund.ClearRefunds();
     }
 
     [Test]
@@ -209,15 +213,351 @@ public class SneakerShopUnitTests
         });
     }
 
+    // Composition: Order - Refund
+    [Test]
+    public void Refund_CreatedViaOrder_BidirectionalLinks()
+    {
+        var customer = new Customer { Username = "john", Name = "John Doe", Email = "john@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 10, 10), "CreditCard", OrderStatus.Processing, 120m);
+
+        var refund = order.CreateRefund("Damaged item");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(refund.Order, Is.EqualTo(order));
+            Assert.That(order.Refunds, Contains.Item(refund));
+            Assert.That(Refund.Refunds, Contains.Item(refund));
+        });
+    }
+
+    [Test]
+    public void Refund_CreateWithEmptyDescription_Throws()
+    {
+        var customer = new Customer { Username = "kate", Name = "Kate Doe", Email = "kate@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 11, 1), "PayPal", OrderStatus.Shipped, 200m);
+
+        Assert.Throws<ArgumentException>(() => order.CreateRefund("   "));
+    }
+
+    [Test]
+    public void Refund_CreateForDeletedOrder_Throws()
+    {
+        var customer = new Customer { Username = "liz", Name = "Liz Doe", Email = "liz@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 9, 9), "Cash", OrderStatus.Pending, 50m);
+
+        order.Delete();
+
+        Assert.Throws<InvalidOperationException>(() => Refund.Create(order, "Should fail"));
+    }
+
+    [Test]
+    public void Refund_RemoveFromWrongOrder_Throws()
+    {
+        var customerA = new Customer { Username = "a", Name = "A", Email = "a@example.com" };
+        var customerB = new Customer { Username = "b", Name = "B", Email = "b@example.com" };
+        var firstOrder = Order.CreateOrder(customerA, new DateTime(2024, 7, 1), "Card", OrderStatus.Processing, 70m);
+        var secondOrder = Order.CreateOrder(customerB, new DateTime(2024, 7, 2), "Card", OrderStatus.Processing, 80m);
+
+        var refund = secondOrder.CreateRefund("Wrong item");
+
+        Assert.Throws<InvalidOperationException>(() => firstOrder.RemoveRefund(refund));
+    }
+
+    [Test]
+    public void Refund_ApproveDetached_Throws()
+    {
+        var customer = new Customer { Username = "tom", Name = "Tom", Email = "tom@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 8, 1), "Card", OrderStatus.Shipped, 90m);
+        var refund = order.CreateRefund("Late delivery");
+
+        order.Delete(); // detaches and removes refund from extent
+
+        Assert.Throws<InvalidOperationException>(() => refund.ApproveRefund());
+    }
+
+    [Test]
+    public void Order_Delete_CascadesRefunds()
+    {
+        var customer = new Customer { Username = "mia", Name = "Mia", Email = "mia@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 6, 15), "Card", OrderStatus.Processing, 110m);
+        var refund = order.CreateRefund("Defect");
+
+        order.Delete();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Order.Orders, Does.Not.Contain(order));
+            Assert.That(Refund.Refunds, Does.Not.Contain(refund));
+            Assert.That(refund.Order, Is.Null);
+            Assert.That(customer.OrderHistory, Does.Not.Contain(order));
+        });
+    }
+
+    // 1..* association: Customer - Order
+    [Test]
+    public void Customer_CreateOrder_AssociationEstablished()
+    {
+        var customer = new Customer { Username = "cust1", Name = "Cust One", Email = "cust1@example.com" };
+
+        var order = Order.CreateOrder(customer, new DateTime(2024, 5, 5), "Card", OrderStatus.Pending, 60m);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(order.Customer, Is.EqualTo(customer));
+            Assert.That(customer.OrderHistory, Contains.Item(order));
+        });
+    }
+
+    [Test]
+    public void Order_ChangeCustomer_UpdatesHistories()
+    {
+        var firstCustomer = new Customer { Username = "first", Name = "First", Email = "first@example.com" };
+        var secondCustomer = new Customer { Username = "second", Name = "Second", Email = "second@example.com" };
+        var order = Order.CreateOrder(firstCustomer, new DateTime(2024, 4, 4), "Cash", OrderStatus.Pending, 40m);
+
+        order.ChangeCustomer(secondCustomer);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(order.Customer, Is.EqualTo(secondCustomer));
+            Assert.That(secondCustomer.OrderHistory, Contains.Item(order));
+            Assert.That(firstCustomer.OrderHistory, Does.Not.Contain(order));
+        });
+    }
+
+    [Test]
+    public void Order_CreateWithNullCustomer_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            Order.CreateOrder(null!, new DateTime(2024, 3, 3), "Cash", OrderStatus.Pending, 30m));
+    }
+
+    [Test]
+    public void Order_Delete_RemovesFromCustomerHistory()
+    {
+        var customer = new Customer { Username = "solo", Name = "Solo", Email = "solo@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 2, 2), "Cash", OrderStatus.Pending, 20m);
+
+        order.Delete();
+
+        Assert.That(customer.OrderHistory, Does.Not.Contain(order));
+    }
+
+    // Aggregation: Brand - Sneaker
+    [Test]
+    public void Sneaker_AssignBrand_Bidirectional()
+    {
+        var brand = new Brand { Name = "Nike", Description = "Sports", CountryOfOrigin = "USA" };
+        var sneaker = new Sneaker("Air Max", 150m, ProductCategory.Lifestyle, true, "Black", "Mesh", "Air", 42);
+
+        sneaker.AssignBrand(brand);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sneaker.Brand, Is.EqualTo(brand));
+            Assert.That(brand.Sneakers, Contains.Item(sneaker));
+        });
+    }
+
+    [Test]
+    public void Sneaker_Delete_DoesNotRemoveBrand()
+    {
+        var brand = new Brand { Name = "Puma", Description = "Sportswear", CountryOfOrigin = "Germany" };
+        var sneaker = new Sneaker("RS-X", 130m, ProductCategory.Lifestyle, true, "Red", "Mesh", "RS", 43, brand);
+
+        sneaker.Delete();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Brand.Extent, Contains.Item(brand));
+            Assert.That(brand.Sneakers, Does.Not.Contain(sneaker));
+        });
+    }
+
+    [Test]
+    public void Brand_RemoveUnrelatedSneaker_Throws()
+    {
+        var brandA = new Brand { Name = "A", Description = "A", CountryOfOrigin = "A" };
+        var brandB = new Brand { Name = "B", Description = "B", CountryOfOrigin = "B" };
+        var sneaker = new Sneaker("Model", 120m, ProductCategory.Lifestyle, true, "White", "Leather", "M", 41, brandA);
+
+        Assert.Throws<InvalidOperationException>(() => brandB.RemoveSneaker(sneaker));
+    }
+
+    [Test]
+    public void Brand_DuplicateSneaker_NotDuplicated()
+    {
+        var brand = new Brand { Name = "Reebok", Description = "Reebok", CountryOfOrigin = "USA" };
+        var sneaker = new Sneaker("Classic", 100m, ProductCategory.Lifestyle, true, "White", "Leather", "Classic", 42, brand);
+
+        brand.AddSneaker(sneaker);
+
+        Assert.That(brand.Sneakers.Count(s => s == sneaker), Is.EqualTo(1));
+    }
+
+    // Reflexive association: Employee supervises Employee
+    [Test]
+    public void Employee_AssignSupervisor_Bidirectional()
+    {
+        var supervisor = new Employee("Alice", "Brown", "Manager", 3, new DateTime(2019, 5, 1));
+        var subordinate = new Employee("Bob", "White", "Sales", 1, new DateTime(2023, 2, 1));
+
+        subordinate.AssignSupervisor(supervisor);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(subordinate.Supervisor, Is.EqualTo(supervisor));
+            Assert.That(supervisor.Subordinates, Contains.Item(subordinate));
+        });
+    }
+
+    [Test]
+    public void Employee_RemoveNonSubordinate_Throws()
+    {
+        var supervisor = new Employee("Carl", "Stone", "Lead", 2, new DateTime(2021, 1, 1));
+        var subordinate = new Employee("Dana", "Hill", "Staff", 1, new DateTime(2022, 1, 1));
+
+        Assert.Throws<InvalidOperationException>(() => supervisor.RemoveSubordinate(subordinate));
+    }
+
+    [Test]
+    public void Employee_SelfSupervision_Throws()
+    {
+        var employee = new Employee("Eve", "Self", "Analyst", 1, new DateTime(2020, 10, 10));
+
+        Assert.Throws<InvalidOperationException>(() => employee.AssignSupervisor(employee));
+    }
+
+    [Test]
+    public void Employee_CycleSupervision_Throws()
+    {
+        var manager = new Employee("Frank", "Boss", "Manager", 3, new DateTime(2018, 3, 3));
+        var lead = new Employee("Gina", "Lead", "Lead", 2, new DateTime(2019, 4, 4));
+
+        lead.AssignSupervisor(manager);
+
+        Assert.Throws<InvalidOperationException>(() => manager.AssignSupervisor(lead));
+    }
+
+    [Test]
+    public void Employee_RemoveSupervisor_DetachesBothSides()
+    {
+        var manager = new Employee("Hank", "Boss", "Manager", 3, new DateTime(2018, 5, 5));
+        var staff = new Employee("Ivy", "Staff", "Staff", 1, new DateTime(2022, 6, 6));
+
+        staff.AssignSupervisor(manager);
+        staff.RemoveSupervisor();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(staff.Supervisor, Is.Null);
+            Assert.That(manager.Subordinates, Does.Not.Contain(staff));
+        });
+    }
+
     [Test]
     public void Refund_Creation_WithDescription()
     {
-        var refund = new Refund
+        var customer = new Customer { Username = "john", Name = "John Doe", Email = "john@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 10, 10), "CreditCard", OrderStatus.Processing, 120m);
+        var refund = order.CreateRefund("Damaged item");
+
+        Assert.Multiple(() =>
         {
-            Description = "Damaged item"
+            Assert.That(refund.Description, Is.EqualTo("Damaged item"));
+            Assert.That(refund.Order, Is.EqualTo(order));
+            Assert.That(order.Refunds, Contains.Item(refund));
+            Assert.That(Refund.Refunds, Contains.Item(refund));
+        });
+    }
+
+    [Test]
+    public void Order_Delete_RemovesAssociatedRefunds()
+    {
+        var customer = new Customer { Username = "kate", Name = "Kate Doe", Email = "kate@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 11, 1), "PayPal", OrderStatus.Shipped, 200m);
+        var refund = order.CreateRefund("Wrong size");
+
+        order.Delete();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Order.Orders, Does.Not.Contain(order));
+            Assert.That(Refund.Refunds, Does.Not.Contain(refund));
+            Assert.That(refund.Order, Is.Null);
+        });
+    }
+
+    [Test]
+    public void Order_Associated_WithCustomer()
+    {
+        var customer = new Customer { Username = "anna", Name = "Anna Smith", Email = "anna@example.com" };
+
+        var order = Order.CreateOrder(customer, new DateTime(2024, 12, 1), "Card", OrderStatus.Processing, 80m);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(order.Customer, Is.EqualTo(customer));
+            Assert.That(customer.OrderHistory, Contains.Item(order));
+        });
+
+        var newCustomer = new Customer { Username = "mike", Name = "Mike Brown", Email = "mike@example.com" };
+        order.ChangeCustomer(newCustomer);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(order.Customer, Is.EqualTo(newCustomer));
+            Assert.That(newCustomer.OrderHistory, Contains.Item(order));
+            Assert.That(customer.OrderHistory, Does.Not.Contain(order));
+        });
+    }
+
+    [Test]
+    public void Sneaker_Delete_DoesNotDeleteBrand()
+    {
+        var brand = new Brand
+        {
+            Name = "Nike",
+            Description = "Sportswear",
+            CountryOfOrigin = "USA"
         };
 
-        Assert.That(refund.Description, Is.EqualTo("Damaged item"));
+        var sneaker = new Sneaker("Air Max", 150m, ProductCategory.Lifestyle, true, "Black", "Mesh", "Air", 42, brand);
+
+        Assert.That(brand.Sneakers, Contains.Item(sneaker));
+
+        sneaker.Delete();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Sneaker.Extent, Does.Not.Contain(sneaker));
+            Assert.That(Product.Extent, Does.Not.Contain(sneaker));
+            Assert.That(Brand.Extent, Contains.Item(brand));
+            Assert.That(brand.Sneakers, Does.Not.Contain(sneaker));
+        });
+    }
+
+    [Test]
+    public void Employee_CanSuperviseOthers()
+    {
+        var manager = new Employee("Alice", "Brown", "Manager", 3, new DateTime(2019, 5, 1));
+        var staff = new Employee("Bob", "White", "Sales", 1, new DateTime(2023, 2, 1));
+
+        staff.AssignSupervisor(manager);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(staff.Supervisor, Is.EqualTo(manager));
+            Assert.That(manager.Subordinates, Contains.Item(staff));
+        });
+
+        staff.RemoveSupervisor();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(staff.Supervisor, Is.Null);
+            Assert.That(manager.Subordinates, Does.Not.Contain(staff));
+        });
     }
 
     [Test]

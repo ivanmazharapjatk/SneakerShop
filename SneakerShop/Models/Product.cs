@@ -13,6 +13,12 @@ namespace SneakerShop.Models
             _extent.Clear();
         }
 
+        protected internal static void RemoveFromExtent(Product product)
+        {
+            if (product == null) throw new ArgumentNullException(nameof(product));
+            _extent.Remove(product);
+        }
+
         protected Product()
         {
             _extent.Add(this);

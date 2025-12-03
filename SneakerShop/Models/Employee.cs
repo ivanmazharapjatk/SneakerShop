@@ -10,11 +10,19 @@ namespace SneakerShop.Models
         // CLASS EXTENT FOR EMPLOYEE
         private static readonly List<Employee> _extent = new();
         public static IReadOnlyList<Employee> Extent => _extent.AsReadOnly();
+        private readonly List<Employee> _subordinates = new();
+        public IReadOnlyList<Employee> Subordinates => _subordinates.AsReadOnly();
+        public Employee? Supervisor { get; private set; }
         
         private const string ExtentFilePath = "EmployeeExtent.json";
 
         public static void ClearExtent()
         {
+            foreach (var employee in _extent)
+            {
+                employee._subordinates.Clear();
+                employee.Supervisor = null;
+            }
             _extent.Clear();
         }
         
@@ -123,6 +131,68 @@ namespace SneakerShop.Models
             HireDate = hireDate;
 
             _extent.Add(this);
+        }
+
+        public void AssignSupervisor(Employee supervisor)
+        {
+            if (supervisor == null) throw new ArgumentNullException(nameof(supervisor));
+            if (ReferenceEquals(this, supervisor))
+                throw new InvalidOperationException("Employee cannot supervise themselves.");
+            if (CreatesCycle(supervisor))
+                throw new InvalidOperationException("Cannot assign supervisor that would create a supervision cycle.");
+
+            if (Supervisor == supervisor) return;
+
+            Supervisor?.RemoveSubordinateInternal(this);
+            supervisor.AddSubordinateInternal(this);
+        }
+
+        public void RemoveSupervisor()
+        {
+            Supervisor?.RemoveSubordinateInternal(this);
+        }
+
+        public void RemoveSubordinate(Employee subordinate)
+        {
+            if (subordinate == null) throw new ArgumentNullException(nameof(subordinate));
+            if (!_subordinates.Contains(subordinate))
+                throw new InvalidOperationException("Employee is not supervising this subordinate.");
+
+            RemoveSubordinateInternal(subordinate);
+        }
+
+        private void AddSubordinateInternal(Employee subordinate)
+        {
+            if (_subordinates.Contains(subordinate)) return;
+
+            _subordinates.Add(subordinate);
+            subordinate.Supervisor = this;
+        }
+
+        private void RemoveSubordinateInternal(Employee subordinate)
+        {
+            if (_subordinates.Remove(subordinate))
+            {
+                if (subordinate.Supervisor == this)
+                {
+                    subordinate.Supervisor = null;
+                }
+            }
+        }
+
+        private bool CreatesCycle(Employee potentialSupervisor)
+        {
+            var current = potentialSupervisor;
+            while (current != null)
+            {
+                if (ReferenceEquals(current, this))
+                {
+                    return true;
+                }
+                current = current.Supervisor;
+            }
+
+            return false;
         }
     }
 }

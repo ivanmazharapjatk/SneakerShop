@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using SneakerShop.Enums;
 
 namespace SneakerShop.Models;
@@ -10,12 +11,17 @@ public class Sneaker : Product
 {
     private static readonly List<Sneaker> _extent = new();
     public static IReadOnlyList<Sneaker> Extent => _extent.AsReadOnly();
+    [JsonIgnore]
+    public Brand? Brand { get; private set; }
     
     private const string ExtentFilePath = "SneakerExtent.json";
     
     public static void ClearExtent()
     {
-        _extent.Clear();
+        foreach (var sneaker in _extent.ToArray())
+        {
+            sneaker.Delete();
+        }
     }
 
     public static void SaveExtent()
@@ -76,7 +82,8 @@ public class Sneaker : Product
         string color,
         string material,
         string collection,
-        int size
+        int size,
+        Brand? brand = null
     ) : base()
     {
         Name = name;
@@ -87,7 +94,37 @@ public class Sneaker : Product
         Material = material;
         Collection = collection;
         Size = size;
+        if (brand != null)
+        {
+            AssignBrand(brand);
+        }
 
         _extent.Add(this);
+    }
+
+    public void AssignBrand(Brand brand)
+    {
+        if (brand == null) throw new ArgumentNullException(nameof(brand));
+        if (Brand == brand) return;
+
+        RemoveBrand();
+        Brand = brand;
+        Brand.RegisterSneaker(this);
+    }
+
+    public void RemoveBrand()
+    {
+        if (Brand == null) return;
+
+        var currentBrand = Brand;
+        Brand = null;
+        currentBrand.UnregisterSneaker(this);
+    }
+
+    public void Delete()
+    {
+        RemoveBrand();
+        _extent.Remove(this);
+        RemoveFromExtent(this);
     }
 }
