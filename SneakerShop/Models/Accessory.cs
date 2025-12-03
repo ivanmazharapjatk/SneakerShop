@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SneakerShop.Enums;
 
 namespace SneakerShop.Models;
 
@@ -19,7 +20,6 @@ public class Accessory : Product
         _extent.Clear();
     }
     
-    // Saves the class extent of Accessory to a JSON file
     public static void SaveExtent()
     {
         var options = new JsonSerializerOptions
@@ -31,7 +31,6 @@ public class Accessory : Product
         File.WriteAllText(ExtentFilePath, json);
     }
     
-    // Loads the class extent of Accessory from a JSON file
     public static void LoadExtent()
     {
         if (!File.Exists(ExtentFilePath))
@@ -66,7 +65,7 @@ public class Accessory : Product
     public Accessory(
         string name,
         decimal price,
-        string category,
+        ProductCategory category,
         bool available,
         string color,
         string material,

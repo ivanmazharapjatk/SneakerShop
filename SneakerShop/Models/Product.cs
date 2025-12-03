@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using SneakerShop.Enums;
 
 namespace SneakerShop.Models
 {
@@ -13,18 +12,19 @@ namespace SneakerShop.Models
         {
             _extent.Clear();
         }
-        
+
         protected Product()
         {
             _extent.Add(this);
         }
 
         private string _name;
-        private string _category;
         private string _color;
         private string _material;
         private decimal _price;
         private double? _rating;
+        
+        public ProductCategory Category { get; set; }
 
         public string Name
         {
@@ -48,19 +48,8 @@ namespace SneakerShop.Models
             }
         }
 
-        public string Category
-        {
-            get => _category;
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                    throw new ArgumentException("Category cannot be empty.");
-                _category = value;
-            }
-        }
-
         public bool Available { get; set; }
-
+        
         public string Color
         {
             get => _color;
@@ -71,7 +60,7 @@ namespace SneakerShop.Models
                 _color = value;
             }
         }
-
+        
         public string Material
         {
             get => _material;
@@ -92,6 +81,18 @@ namespace SneakerShop.Models
                     throw new ArgumentOutOfRangeException(nameof(Rating), "Rating must be between 1 and 5.");
                 _rating = value;
             }
+        }
+        
+        public virtual void AddProduct() { }
+
+        public virtual void AddProductToWishList(Customer customer)
+        {
+            customer.Wishlist.Add(this);
+        }
+
+        public virtual void AddProductToCart(Customer customer)
+        {
+            customer.Cart.Add(this);
         }
     }
 }
