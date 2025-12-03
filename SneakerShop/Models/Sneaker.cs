@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using SneakerShop.Enums;
 
 namespace SneakerShop.Models;
 
@@ -67,10 +68,16 @@ public class Sneaker : Product
         }
     }
     
-    public Sneaker(string name, decimal price,
-        string category, bool available,
-        string color, string material,
-        string collection, int size) : base()
+    public Sneaker(
+        string name,
+        decimal price,
+        ProductCategory category,
+        bool available,
+        string color,
+        string material,
+        string collection,
+        int size
+    ) : base()
     {
         Name = name;
         Price = price;
@@ -79,8 +86,8 @@ public class Sneaker : Product
         Color = color;
         Material = material;
         Collection = collection;
-        Size = size; 
-        
+        Size = size;
+
         _extent.Add(this);
     }
 }
