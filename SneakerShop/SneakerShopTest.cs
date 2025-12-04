@@ -218,7 +218,7 @@ public class SneakerShopUnitTests
     public void Refund_CreatedViaOrder_BidirectionalLinks()
     {
         var customer = new Customer { Username = "john", Name = "John Doe", Email = "john@example.com" };
-        var order = Order.CreateOrder(customer, new DateTime(2024, 10, 10), "CreditCard", OrderStatus.Processing, 120m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 10, 10), "CreditCard", OrderStatus.Processing);
 
         var refund = order.CreateRefund("Damaged item");
 
@@ -234,7 +234,7 @@ public class SneakerShopUnitTests
     public void Refund_CreateWithEmptyDescription_Throws()
     {
         var customer = new Customer { Username = "kate", Name = "Kate Doe", Email = "kate@example.com" };
-        var order = Order.CreateOrder(customer, new DateTime(2024, 11, 1), "PayPal", OrderStatus.Shipped, 200m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 11, 1), "PayPal", OrderStatus.Shipped);
 
         Assert.Throws<ArgumentException>(() => order.CreateRefund("   "));
     }
@@ -243,7 +243,7 @@ public class SneakerShopUnitTests
     public void Refund_CreateForDeletedOrder_Throws()
     {
         var customer = new Customer { Username = "liz", Name = "Liz Doe", Email = "liz@example.com" };
-        var order = Order.CreateOrder(customer, new DateTime(2024, 9, 9), "Cash", OrderStatus.Pending, 50m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 9, 9), "Cash", OrderStatus.Pending);
 
         order.Delete();
 
@@ -255,8 +255,8 @@ public class SneakerShopUnitTests
     {
         var customerA = new Customer { Username = "a", Name = "A", Email = "a@example.com" };
         var customerB = new Customer { Username = "b", Name = "B", Email = "b@example.com" };
-        var firstOrder = Order.CreateOrder(customerA, new DateTime(2024, 7, 1), "Card", OrderStatus.Processing, 70m);
-        var secondOrder = Order.CreateOrder(customerB, new DateTime(2024, 7, 2), "Card", OrderStatus.Processing, 80m);
+        var firstOrder = Order.CreateOrder(customerA, new DateTime(2024, 7, 1), "Card", OrderStatus.Processing);
+        var secondOrder = Order.CreateOrder(customerB, new DateTime(2024, 7, 2), "Card", OrderStatus.Processing);
 
         var refund = secondOrder.CreateRefund("Wrong item");
 
@@ -267,7 +267,7 @@ public class SneakerShopUnitTests
     public void Refund_ApproveDetached_Throws()
     {
         var customer = new Customer { Username = "tom", Name = "Tom", Email = "tom@example.com" };
-        var order = Order.CreateOrder(customer, new DateTime(2024, 8, 1), "Card", OrderStatus.Shipped, 90m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 8, 1), "Card", OrderStatus.Shipped);
         var refund = order.CreateRefund("Late delivery");
 
         order.Delete(); // detaches and removes refund from extent
@@ -279,7 +279,7 @@ public class SneakerShopUnitTests
     public void Order_Delete_CascadesRefunds()
     {
         var customer = new Customer { Username = "mia", Name = "Mia", Email = "mia@example.com" };
-        var order = Order.CreateOrder(customer, new DateTime(2024, 6, 15), "Card", OrderStatus.Processing, 110m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 6, 15), "Card", OrderStatus.Processing);
         var refund = order.CreateRefund("Defect");
 
         order.Delete();
@@ -299,7 +299,7 @@ public class SneakerShopUnitTests
     {
         var customer = new Customer { Username = "cust1", Name = "Cust One", Email = "cust1@example.com" };
 
-        var order = Order.CreateOrder(customer, new DateTime(2024, 5, 5), "Card", OrderStatus.Pending, 60m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 5, 5), "Card", OrderStatus.Pending);
 
         Assert.Multiple(() =>
         {
@@ -313,7 +313,7 @@ public class SneakerShopUnitTests
     {
         var firstCustomer = new Customer { Username = "first", Name = "First", Email = "first@example.com" };
         var secondCustomer = new Customer { Username = "second", Name = "Second", Email = "second@example.com" };
-        var order = Order.CreateOrder(firstCustomer, new DateTime(2024, 4, 4), "Cash", OrderStatus.Pending, 40m);
+        var order = Order.CreateOrder(firstCustomer, new DateTime(2024, 4, 4), "Cash", OrderStatus.Pending);
 
         order.ChangeCustomer(secondCustomer);
 
@@ -329,14 +329,14 @@ public class SneakerShopUnitTests
     public void Order_CreateWithNullCustomer_Throws()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            Order.CreateOrder(null!, new DateTime(2024, 3, 3), "Cash", OrderStatus.Pending, 30m));
+            Order.CreateOrder(null!, new DateTime(2024, 3, 3), "Cash", OrderStatus.Pending));
     }
 
     [Test]
     public void Order_Delete_RemovesFromCustomerHistory()
     {
         var customer = new Customer { Username = "solo", Name = "Solo", Email = "solo@example.com" };
-        var order = Order.CreateOrder(customer, new DateTime(2024, 2, 2), "Cash", OrderStatus.Pending, 20m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 2, 2), "Cash", OrderStatus.Pending);
 
         order.Delete();
 
@@ -459,7 +459,7 @@ public class SneakerShopUnitTests
     public void Refund_Creation_WithDescription()
     {
         var customer = new Customer { Username = "john", Name = "John Doe", Email = "john@example.com" };
-        var order = Order.CreateOrder(customer, new DateTime(2024, 10, 10), "CreditCard", OrderStatus.Processing, 120m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 10, 10), "CreditCard", OrderStatus.Processing);
         var refund = order.CreateRefund("Damaged item");
 
         Assert.Multiple(() =>
@@ -475,7 +475,7 @@ public class SneakerShopUnitTests
     public void Order_Delete_RemovesAssociatedRefunds()
     {
         var customer = new Customer { Username = "kate", Name = "Kate Doe", Email = "kate@example.com" };
-        var order = Order.CreateOrder(customer, new DateTime(2024, 11, 1), "PayPal", OrderStatus.Shipped, 200m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 11, 1), "PayPal", OrderStatus.Shipped);
         var refund = order.CreateRefund("Wrong size");
 
         order.Delete();
@@ -493,7 +493,7 @@ public class SneakerShopUnitTests
     {
         var customer = new Customer { Username = "anna", Name = "Anna Smith", Email = "anna@example.com" };
 
-        var order = Order.CreateOrder(customer, new DateTime(2024, 12, 1), "Card", OrderStatus.Processing, 80m);
+        var order = Order.CreateOrder(customer, new DateTime(2024, 12, 1), "Card", OrderStatus.Processing);
 
         Assert.Multiple(() =>
         {
