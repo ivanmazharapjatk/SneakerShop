@@ -12,7 +12,7 @@ public class Sneaker : Product
     private static readonly List<Sneaker> _extent = new();
     public static IReadOnlyList<Sneaker> Extent => _extent.AsReadOnly();
     [JsonIgnore]
-    public Brand? Brand { get; private set; }
+    public Brand Brand { get; private set; }
     
     private const string ExtentFilePath = "SneakerExtent.json";
     
@@ -83,7 +83,7 @@ public class Sneaker : Product
         string material,
         string collection,
         int size,
-        Brand? brand = null
+        Brand brand
     ) : base()
     {
         Name = name;
@@ -94,10 +94,7 @@ public class Sneaker : Product
         Material = material;
         Collection = collection;
         Size = size;
-        if (brand != null)
-        {
-            AssignBrand(brand);
-        }
+        AssignBrand(brand);
 
         _extent.Add(this);
     }
@@ -107,23 +104,28 @@ public class Sneaker : Product
         if (brand == null) throw new ArgumentNullException(nameof(brand));
         if (Brand == brand) return;
 
-        RemoveBrand();
+        var previousBrand = Brand;
+        if (previousBrand != null)
+        {
+            previousBrand.UnregisterSneaker(this);
+        }
+
         Brand = brand;
-        Brand.RegisterSneaker(this);
+        brand.RegisterSneaker(this);
     }
 
-    public void RemoveBrand()
+    private void DetachBrand()
     {
         if (Brand == null) return;
 
         var currentBrand = Brand;
-        Brand = null;
+        Brand = null!;
         currentBrand.UnregisterSneaker(this);
     }
 
     public void Delete()
     {
-        RemoveBrand();
+        DetachBrand();
         _extent.Remove(this);
         RemoveFromExtent(this);
     }

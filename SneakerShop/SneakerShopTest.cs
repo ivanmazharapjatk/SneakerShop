@@ -23,7 +23,8 @@ public class SneakerShopUnitTests
     [Test]
     public void Customer_CanAddProductsToCartAndCalculateTotal()
     {
-        var sneaker = new Sneaker("Nike Air Force 1", 120m, ProductCategory.Lifestyle, true, "White", "Leather", "Classic", 42);
+        var nike = new Brand { Name = "Nike", Description = "Sportswear", CountryOfOrigin = "USA" };
+        var sneaker = new Sneaker("Nike Air Force 1", 120m, ProductCategory.Lifestyle, true, "White", "Leather", "Classic", 42, nike);
 
         var accessory = new Accessory(
             "Shoe Cleaner",
@@ -63,7 +64,8 @@ public class SneakerShopUnitTests
     [Test]
     public void Customer_CanRatePurchasedSneaker_WithValidRating()
     {
-        var sneaker = new Sneaker("Adidas Ultraboost", 180m, ProductCategory.Running, true, "Black", "Knit", "Performance", 43);
+        var adidas = new Brand { Name = "Adidas", Description = "Sportswear", CountryOfOrigin = "Germany" };
+        var sneaker = new Sneaker("Adidas Ultraboost", 180m, ProductCategory.Running, true, "Black", "Knit", "Performance", 43, adidas);
 
         sneaker.Rating = 4.5;
 
@@ -74,7 +76,8 @@ public class SneakerShopUnitTests
     [Test]
     public void Customer_SubmitsInvalidRating_ThrowsException()
     {
-        var sneaker = new Sneaker("Puma RS-X", 110m, ProductCategory.Lifestyle, true, "Red", "Suede", "Retro", 44);
+        var puma = new Brand { Name = "Puma", Description = "Sportswear", CountryOfOrigin = "Germany" };
+        var sneaker = new Sneaker("Puma RS-X", 110m, ProductCategory.Lifestyle, true, "Red", "Suede", "Retro", 44, puma);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => sneaker.Rating = 6.0);
     }
@@ -93,7 +96,8 @@ public class SneakerShopUnitTests
     [Test]
     public void Product_NotAvailable_CannotBePurchased()
     {
-        var outOfStockSneaker = new Sneaker("Limited Edition", 300m, ProductCategory.Lifestyle, false, "Gold", "Leather", "Limited", 45);
+        var brand = new Brand { Name = "Collab", Description = "Limited collab", CountryOfOrigin = "USA" };
+        var outOfStockSneaker = new Sneaker("Limited Edition", 300m, ProductCategory.Lifestyle, false, "Gold", "Leather", "Limited", 45, brand);
 
         Assert.That(outOfStockSneaker.Available, Is.False);
     }
@@ -115,7 +119,8 @@ public class SneakerShopUnitTests
     [Test]
     public void Sneaker_Creation_WithValidData_Success()
     {
-        var sneaker = new Sneaker("New Balance 990", 175m, ProductCategory.Running, true, "Grey", "Suede", "Heritage", 44);
+        var nb = new Brand { Name = "New Balance", Description = "Lifestyle", CountryOfOrigin = "USA" };
+        var sneaker = new Sneaker("New Balance 990", 175m, ProductCategory.Running, true, "Grey", "Suede", "Heritage", 44, nb);
 
         Assert.Multiple(() =>
         {
@@ -138,8 +143,9 @@ public class SneakerShopUnitTests
     [Test]
     public void Product_NegativePrice_ThrowsException()
     {
+        var brand = new Brand { Name = "TestBrand", Description = "Desc", CountryOfOrigin = "USA" };
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new Sneaker("Test", -10m, ProductCategory.Other, true, "Black", "Leather", "Test", 42));
+            new Sneaker("Test", -10m, ProductCategory.Other, true, "Black", "Leather", "Test", 42, brand));
     }
 
     [Test]
@@ -153,8 +159,9 @@ public class SneakerShopUnitTests
             PhoneNumber = "123456789",
         };
 
-        customer.Wishlist.Add(new Sneaker("Test", 100m, ProductCategory.Other, true, "Black", "Leather", "Test", 42));
-        customer.Cart.Add(new Sneaker("CartItem", 120m, ProductCategory.Other, true, "White", "Mesh", "Test", 43));
+        var brand = new Brand { Name = "ListBrand", Description = "Desc", CountryOfOrigin = "USA" };
+        customer.Wishlist.Add(new Sneaker("Test", 100m, ProductCategory.Other, true, "Black", "Leather", "Test", 42, brand));
+        customer.Cart.Add(new Sneaker("CartItem", 120m, ProductCategory.Other, true, "White", "Mesh", "Test", 43, brand));
 
         Assert.Multiple(() =>
         {
@@ -347,15 +354,17 @@ public class SneakerShopUnitTests
     [Test]
     public void Sneaker_AssignBrand_Bidirectional()
     {
-        var brand = new Brand { Name = "Nike", Description = "Sports", CountryOfOrigin = "USA" };
-        var sneaker = new Sneaker("Air Max", 150m, ProductCategory.Lifestyle, true, "Black", "Mesh", "Air", 42);
+        var originalBrand = new Brand { Name = "Nike", Description = "Sports", CountryOfOrigin = "USA" };
+        var newBrand = new Brand { Name = "Adidas", Description = "Sports", CountryOfOrigin = "Germany" };
+        var sneaker = new Sneaker("Air Max", 150m, ProductCategory.Lifestyle, true, "Black", "Mesh", "Air", 42, originalBrand);
 
-        sneaker.AssignBrand(brand);
+        sneaker.AssignBrand(newBrand);
 
         Assert.Multiple(() =>
         {
-            Assert.That(sneaker.Brand, Is.EqualTo(brand));
-            Assert.That(brand.Sneakers, Contains.Item(sneaker));
+            Assert.That(sneaker.Brand, Is.EqualTo(newBrand));
+            Assert.That(newBrand.Sneakers, Contains.Item(sneaker));
+            Assert.That(originalBrand.Sneakers, Does.Not.Contain(sneaker));
         });
     }
 

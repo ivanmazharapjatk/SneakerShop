@@ -33,7 +33,7 @@ namespace SneakerShop.Models
             if (sneaker.Brand != this)
                 throw new InvalidOperationException("Sneaker is not associated with this brand.");
 
-            sneaker.RemoveBrand();
+            throw new InvalidOperationException("Reassign the sneaker to another brand or delete it before removal.");
         }
 
         internal void RegisterSneaker(Sneaker sneaker)
@@ -49,12 +49,17 @@ namespace SneakerShop.Models
             _sneakers.Remove(sneaker);
         }
 
+        public void Delete()
+        {
+            if (_sneakers.Count > 0)
+                throw new InvalidOperationException("Cannot delete brand that still has sneakers.");
+
+            _extent.Remove(this);
+        }
+
         public static void ClearBrands()
         {
-            foreach (var brand in _extent)
-            {
-                brand._sneakers.Clear();
-            }
+            Sneaker.ClearExtent();
             _extent.Clear();
         }
     }
