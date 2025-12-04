@@ -7,7 +7,7 @@ namespace SneakerShop.Models
     {
         private static readonly List<Order> _orders = new();
         public static IReadOnlyList<Order> Orders => _orders.AsReadOnly();
-        
+
         private readonly List<Refund> _refunds = new();
         public IReadOnlyList<Refund> Refunds => _refunds.AsReadOnly();
         public Customer Customer { get; private set; }
@@ -15,7 +15,11 @@ namespace SneakerShop.Models
         public DateTime OrderDate { get; set; }
         public string PaymentInfo { get; set; }
         public OrderStatus Status { get; set; }
-        public decimal TotalAmount { get; set; }
+        
+        public decimal TotalAmount { get; private set; }
+        
+        private readonly List<Product> _products = new();
+        public IReadOnlyList<Product> Products => _products.AsReadOnly();
 
         private Order(Customer customer)
         {
@@ -23,22 +27,66 @@ namespace SneakerShop.Models
             _orders.Add(this);
             customer.RegisterOrder(this);
         }
-        
+
         public static IReadOnlyList<Order> GetOrders() => Orders;
-
-        public static Order CreateOrder(Customer customer, DateTime date, string paymentInfo, OrderStatus status, decimal totalAmount)
+        
+        public static Order CreateOrder(
+            Customer customer,
+            DateTime date,
+            string paymentInfo,
+            OrderStatus status,
+            string? promocodeString = null)
         {
-            if (customer == null) throw new ArgumentNullException(nameof(customer));
+            if (customer == null) 
+                throw new ArgumentNullException(nameof(customer));
 
-            return new Order(customer)
+            var order = new Order(customer)
             {
                 OrderDate = date,
                 PaymentInfo = paymentInfo,
-                Status = status,
-                TotalAmount = totalAmount
+                Status = status
             };
+            
+            foreach (var product in customer.Cart)
+                order._products.Add(product);
+            
+            customer.Cart.Clear();
+            
+            order.CalculateTotal(promocodeString);
+
+            return order;
         }
-        
+
+        private void CalculateTotal(string? promocodeString)
+        {
+            decimal sum = 0m;
+            foreach (var product in _products)
+                sum += product.Price;
+            
+            if (!string.IsNullOrWhiteSpace(promocodeString))
+            {
+                var promo = Promocode.Extent
+                    .FirstOrDefault(p => string.Equals(p.Code, promocodeString, StringComparison.OrdinalIgnoreCase));
+
+                if (promo != null)
+                {
+                    bool validDates =
+                        promo.StartDate <= DateTime.Now &&
+                        promo.EndDate >= DateTime.Now;
+
+                    if (validDates && promo.NumberOfUses > 0)
+                    {
+                        decimal discountMultiplier = 1 - (promo.DiscountPercent / 100m);
+                        sum *= discountMultiplier;
+                        
+                        promo.NumberOfUses--;
+                    }
+                }
+            }
+
+            TotalAmount = sum;
+        }
+
         public void ChangeCustomer(Customer newCustomer)
         {
             if (newCustomer == null) throw new ArgumentNullException(nameof(newCustomer));
@@ -57,7 +105,6 @@ namespace SneakerShop.Models
         internal void RegisterRefund(Refund refund)
         {
             if (refund == null) throw new ArgumentNullException(nameof(refund));
-
             _refunds.Add(refund);
         }
 
@@ -74,9 +121,7 @@ namespace SneakerShop.Models
         public void Delete()
         {
             foreach (var refund in _refunds.ToArray())
-            {
                 RemoveRefund(refund);
-            }
 
             Customer?.UnregisterOrder(this);
             Customer = null!; // cleared on deletion
@@ -86,9 +131,7 @@ namespace SneakerShop.Models
         public static void ClearOrders()
         {
             foreach (var order in _orders.ToArray())
-            {
                 order.Delete();
-            }
         }
     }
 }
