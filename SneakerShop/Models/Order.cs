@@ -11,7 +11,6 @@ namespace SneakerShop.Models
         private readonly List<Refund> _refunds = new();
         public IReadOnlyList<Refund> Refunds => _refunds.AsReadOnly();
         public Customer Customer { get; private set; }
-
         public DateTime OrderDate { get; set; }
         public string PaymentInfo { get; set; }
         public OrderStatus Status { get; set; }
@@ -24,21 +23,21 @@ namespace SneakerShop.Models
         private Order(Customer customer)
         {
             Customer = customer ?? throw new ArgumentNullException(nameof(customer));
+
             _orders.Add(this);
             customer.RegisterOrder(this);
         }
 
         public static IReadOnlyList<Order> GetOrders() => Orders;
-        
+
         public static Order CreateOrder(
             Customer customer,
             DateTime date,
             string paymentInfo,
             OrderStatus status,
-            string? promocodeString = null)
+            string? promo = null)
         {
-            if (customer == null) 
-                throw new ArgumentNullException(nameof(customer));
+            if (customer == null) throw new ArgumentNullException(nameof(customer));
 
             var order = new Order(customer)
             {
@@ -46,13 +45,12 @@ namespace SneakerShop.Models
                 PaymentInfo = paymentInfo,
                 Status = status
             };
-            
-            foreach (var product in customer.Cart)
-                order._products.Add(product);
-            
+
+            foreach (var p in customer.Cart)
+                order._products.Add(p);
+
             customer.Cart.Clear();
-            
-            order.CalculateTotal(promocodeString);
+            order.CalculateTotal(promo);
 
             return order;
         }
@@ -99,32 +97,44 @@ namespace SneakerShop.Models
 
         public Refund CreateRefund(string description)
         {
-            return Refund.Create(this, description);
-        }
+            if (string.IsNullOrWhiteSpace(description))
+                throw new ArgumentException("Refund description cannot be empty.", nameof(description));
 
-        internal void RegisterRefund(Refund refund)
-        {
-            if (refund == null) throw new ArgumentNullException(nameof(refund));
+            var refund = new Refund(this, description);
             _refunds.Add(refund);
+            return refund;
         }
-
+        
         internal void RemoveRefund(Refund refund)
         {
             if (refund == null) throw new ArgumentNullException(nameof(refund));
+
+            // Correct ownership check
+            if (refund.Order != this)
+                throw new InvalidOperationException("Refund does not belong to this order.");
+
+            _refunds.Remove(refund);
+            Refund.RemoveFromExtent(refund);
+            refund.InternalDelete();
+        }
+
+        internal void DeleteRefund(Refund refund)
+        {
             if (!_refunds.Contains(refund))
                 throw new InvalidOperationException("Refund does not belong to this order.");
 
             _refunds.Remove(refund);
-            refund.DetachFromOrder();
+            Refund.RemoveFromExtent(refund);
         }
+
 
         public void Delete()
         {
             foreach (var refund in _refunds.ToArray())
-                RemoveRefund(refund);
+                DeleteRefund(refund);
 
             Customer?.UnregisterOrder(this);
-            Customer = null!; // cleared on deletion
+            Customer = null!;
             _orders.Remove(this);
         }
 

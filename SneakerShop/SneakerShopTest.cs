@@ -254,7 +254,7 @@ public class SneakerShopUnitTests
 
         order.Delete();
 
-        Assert.Throws<InvalidOperationException>(() => Refund.Create(order, "Should fail"));
+        Assert.Throws<InvalidOperationException>(() => order.CreateRefund("Should fail"));
     }
 
     [Test]
