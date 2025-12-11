@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using SneakerShop.Enums;
 
 namespace SneakerShop.Models
@@ -7,6 +8,16 @@ namespace SneakerShop.Models
     {
         private static readonly List<Order> _orders = new();
         public static IReadOnlyList<Order> Orders => _orders.AsReadOnly();
+        private static readonly Dictionary<string, List<Order>> _ordersByUsername = new(StringComparer.OrdinalIgnoreCase);
+        public static IReadOnlyList<Order> GetOrdersByUsername(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                throw new ArgumentException("Username cannot be empty.", nameof(username));
+
+            return _ordersByUsername.TryGetValue(username, out var orders)
+                ? orders.AsReadOnly()
+                : Array.Empty<Order>();
+        }
 
         private readonly List<Refund> _refunds = new();
         public IReadOnlyList<Refund> Refunds => _refunds.AsReadOnly();
@@ -24,6 +35,7 @@ namespace SneakerShop.Models
         {
             Customer = customer ?? throw new ArgumentNullException(nameof(customer));
 
+            RegisterQualifiedAssociation(customer);
             _orders.Add(this);
             customer.RegisterOrder(this);
         }
@@ -38,6 +50,8 @@ namespace SneakerShop.Models
             string? promo = null)
         {
             if (customer == null) throw new ArgumentNullException(nameof(customer));
+            if (string.IsNullOrWhiteSpace(customer.Username))
+                throw new InvalidOperationException("Customer must have a username to create an order.");
 
             var order = new Order(customer)
             {
@@ -88,10 +102,14 @@ namespace SneakerShop.Models
         public void ChangeCustomer(Customer newCustomer)
         {
             if (newCustomer == null) throw new ArgumentNullException(nameof(newCustomer));
+            if (string.IsNullOrWhiteSpace(newCustomer.Username))
+                throw new InvalidOperationException("Customer must have a username to be assigned to an order.");
             if (Customer == newCustomer) return;
 
+            UnregisterQualifiedAssociation(Customer.Username);
             Customer.UnregisterOrder(this);
             Customer = newCustomer;
+            RegisterQualifiedAssociation(newCustomer);
             newCustomer.RegisterOrder(this);
         }
 
@@ -133,6 +151,7 @@ namespace SneakerShop.Models
             foreach (var refund in _refunds.ToArray())
                 DeleteRefund(refund);
 
+            UnregisterQualifiedAssociation(Customer?.Username);
             Customer?.UnregisterOrder(this);
             Customer = null!;
             _orders.Remove(this);
@@ -142,6 +161,73 @@ namespace SneakerShop.Models
         {
             foreach (var order in _orders.ToArray())
                 order.Delete();
+
+            _ordersByUsername.Clear();
+        }
+
+        private void RegisterQualifiedAssociation(Customer customer)
+        {
+            if (string.IsNullOrWhiteSpace(customer.Username))
+                throw new InvalidOperationException("Customer must have a username to create an order.");
+
+            if (!_ordersByUsername.TryGetValue(customer.Username, out var orders))
+            {
+                orders = new List<Order>();
+                _ordersByUsername[customer.Username] = orders;
+            }
+
+            if (!orders.Contains(this))
+            {
+                orders.Add(this);
+            }
+        }
+
+        private void UnregisterQualifiedAssociation(string? username)
+        {
+            if (string.IsNullOrWhiteSpace(username)) return;
+
+            if (_ordersByUsername.TryGetValue(username, out var orders))
+            {
+                orders.Remove(this);
+                if (orders.Count == 0)
+                {
+                    _ordersByUsername.Remove(username);
+                }
+            }
+        }
+
+        internal static void UpdateQualifiedAssociation(Customer customer, string? oldUsername, string newUsername)
+        {
+            if (customer == null) throw new ArgumentNullException(nameof(customer));
+            if (string.IsNullOrWhiteSpace(newUsername))
+                throw new ArgumentException("Username cannot be empty.", nameof(newUsername));
+
+            if (!string.IsNullOrWhiteSpace(oldUsername) &&
+                _ordersByUsername.TryGetValue(oldUsername, out var oldOrders))
+            {
+                oldOrders.RemoveAll(o => ReferenceEquals(o.Customer, customer));
+                if (oldOrders.Count == 0)
+                {
+                    _ordersByUsername.Remove(oldUsername);
+                }
+            }
+
+            foreach (var order in _orders)
+            {
+                if (ReferenceEquals(order.Customer, customer))
+                {
+                    if (!_ordersByUsername.TryGetValue(newUsername, out var orders))
+                    {
+                        orders = new List<Order>();
+                        _ordersByUsername[newUsername] = orders;
+                    }
+
+                    if (!orders.Contains(order))
+                    {
+                        orders.Add(order);
+                    }
+                }
+            }
         }
     }
 }

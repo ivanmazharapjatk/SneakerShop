@@ -350,6 +350,65 @@ public class SneakerShopUnitTests
         Assert.That(customer.OrderHistory, Does.Not.Contain(order));
     }
 
+    // Qualified association: Customer username -> Order lookup
+    [Test]
+    public void Order_GetOrdersByUsername_ReturnsQualifiedMatches()
+    {
+        var firstCustomer = new Customer { Username = "qual-user1", Name = "Qual One", Email = "qual1@example.com" };
+        var secondCustomer = new Customer { Username = "qual-user2", Name = "Qual Two", Email = "qual2@example.com" };
+
+        var firstOrder = Order.CreateOrder(firstCustomer, new DateTime(2024, 1, 1), "Card", OrderStatus.Pending);
+        var secondOrder = Order.CreateOrder(firstCustomer, new DateTime(2024, 1, 2), "Card", OrderStatus.Processing);
+        var thirdOrder = Order.CreateOrder(secondCustomer, new DateTime(2024, 1, 3), "Card", OrderStatus.Delivered);
+
+        var firstCustomerOrders = Order.GetOrdersByUsername("qual-user1");
+        var secondCustomerOrders = Order.GetOrdersByUsername("qual-user2");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstCustomerOrders, Has.Count.EqualTo(2));
+            Assert.That(firstCustomerOrders, Does.Contain(firstOrder));
+            Assert.That(firstCustomerOrders, Does.Contain(secondOrder));
+            Assert.That(secondCustomerOrders, Contains.Item(thirdOrder));
+            Assert.That(Order.GetOrdersByUsername("missing-user"), Is.Empty);
+        });
+    }
+
+    [Test]
+    public void Customer_ChangeUsername_RequalifiesOrders()
+    {
+        var customer = new Customer { Username = "old-user", Name = "Old User", Email = "old@example.com" };
+        var order = Order.CreateOrder(customer, new DateTime(2024, 2, 1), "Cash", OrderStatus.Pending);
+
+        customer.Username = "new-user";
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Order.GetOrdersByUsername("old-user"), Does.Not.Contain(order));
+            Assert.That(Order.GetOrdersByUsername("new-user"), Contains.Item(order));
+        });
+    }
+
+    [Test]
+    public void Order_ChangeCustomer_UpdatesQualifiedAssociation()
+    {
+        var originalCustomer = new Customer { Username = "qual-original", Name = "Orig", Email = "orig@example.com" };
+        var newCustomer = new Customer { Username = "qual-new", Name = "New", Email = "new@example.com" };
+        var order = Order.CreateOrder(originalCustomer, new DateTime(2024, 3, 1), "Card", OrderStatus.Pending);
+
+        order.ChangeCustomer(newCustomer);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Order.GetOrdersByUsername("qual-original"), Does.Not.Contain(order));
+            Assert.That(Order.GetOrdersByUsername("qual-new"), Contains.Item(order));
+        });
+
+        order.Delete();
+
+        Assert.That(Order.GetOrdersByUsername("qual-new"), Does.Not.Contain(order));
+    }
+
     // Aggregation: Brand - Sneaker
     [Test]
     public void Sneaker_AssignBrand_Bidirectional()

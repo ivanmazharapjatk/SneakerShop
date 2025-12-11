@@ -6,8 +6,23 @@ namespace SneakerShop.Models
     {
         private readonly List<Order> _orderHistory = new();
         public IReadOnlyList<Order> OrderHistory => _orderHistory.AsReadOnly();
-        
-        public string Username { get; set; }
+
+        private string _username = string.Empty;
+        public string Username
+        {
+            get => _username;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException("Username cannot be empty.");
+                if (string.Equals(_username, value, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                var previousUsername = _username;
+                Order.UpdateQualifiedAssociation(this, previousUsername, value);
+                _username = value;
+            }
+        }
         public string Name { get; set; }
         public string Email { get; set; }
         public string? PhoneNumber { get; set; }
