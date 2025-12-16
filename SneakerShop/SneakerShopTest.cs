@@ -177,13 +177,7 @@ public class SneakerShopUnitTests
     [Test]
     public void Delivery_Creation_WithValidData_Success()
     {
-        var delivery = new Delivery
-        {
-            TrackingNumber = "TRACK123",
-            DeliveryAddress = "123 Main St",
-            EstimatedTime = new DateTime(2025, 1, 1),
-            BaseDeliveryFee = 9.99m
-        };
+        var delivery = new Delivery("TRACK123","123 Main St",new DateTime(2025,1,1),9.99m);
 
         Assert.Multiple(() =>
         {
@@ -631,11 +625,7 @@ public class SneakerShopUnitTests
     [Test]
     public void Store_Creation_WithValidData_Success()
     {
-        var store = new Store
-        {
-            Name = "Main Store",
-            Address = "456 Shop Street"
-        };
+        var store = new Store("Main Store", "456 Shop Street");
 
         Assert.Multiple(() =>
         {
