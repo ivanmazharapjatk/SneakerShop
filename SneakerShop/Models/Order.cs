@@ -89,8 +89,11 @@ namespace SneakerShop.Models
 
         public void ChangeCustomer(Customer newCustomer)
         {
-            if (newCustomer == null) throw new ArgumentNullException(nameof(newCustomer));
-            if (Customer == newCustomer) return;
+            if (newCustomer == null)
+                throw new ArgumentNullException(nameof(newCustomer));
+
+            if (Customer == newCustomer)
+                return;
 
             Customer.UnregisterOrder(this);
             Customer = newCustomer;
@@ -124,7 +127,7 @@ namespace SneakerShop.Models
                 RemoveRefund(refund);
 
             Customer?.UnregisterOrder(this);
-            Customer = null!; // cleared on deletion
+            Customer = null!;
             _orders.Remove(this);
         }
 
