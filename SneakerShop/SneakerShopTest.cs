@@ -18,6 +18,7 @@ public class SneakerShopUnitTests
         Product.ClearExtent();
         Order.ClearOrders();
         Refund.ClearRefunds();
+        Supply.ClearExtent();
     }
 
     [Test]
@@ -202,7 +203,9 @@ public class SneakerShopUnitTests
     [Test]
     public void LogisticsCoordinator_AssignedSupplies_Creation()
     {
-        var supply = new Supply { SupplyDate = new DateTime(2024, 5, 10) };
+        var stock = new Stock { Quantity = 50 };
+        var supplier = new Supplier { Name = "Central Warehouse", Location = "Warsaw" };
+        var supply = Supply.Create(stock, supplier, new DateTime(2024, 5, 10));
         var coordinator = new LogisticsCoordinator();
 
         coordinator.AssignedSupplies.Add(supply);
@@ -211,6 +214,8 @@ public class SneakerShopUnitTests
         {
             Assert.That(coordinator.AssignedSupplies.Count, Is.EqualTo(1));
             Assert.That(coordinator.AssignedSupplies[0].SupplyDate, Is.EqualTo(new DateTime(2024, 5, 10)));
+            Assert.That(supply.Stock, Is.EqualTo(stock));
+            Assert.That(supply.Supplier, Is.EqualTo(supplier));
         });
     }
 
@@ -645,12 +650,68 @@ public class SneakerShopUnitTests
     [Test]
     public void Supply_Creation_WithDate_Success()
     {
-        var supply = new Supply
-        {
-            SupplyDate = new DateTime(2023, 12, 5)
-        };
+        var stock = new Stock { Quantity = 25 };
+        var supplier = new Supplier { Name = "Global Supplies", Location = "Berlin" };
+        var supply = Supply.Create(stock, supplier, new DateTime(2023, 12, 5));
 
-        Assert.That(supply.SupplyDate, Is.EqualTo(new DateTime(2023, 12, 5)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(supply.SupplyDate, Is.EqualTo(new DateTime(2023, 12, 5)));
+            Assert.That(supply.Stock, Is.EqualTo(stock));
+            Assert.That(supply.Supplier, Is.EqualTo(supplier));
+            Assert.That(stock.Supplies, Contains.Item(supply));
+            Assert.That(supplier.Supplies, Contains.Item(supply));
+            Assert.That(stock.Supplier, Is.EqualTo(supplier));
+        });
+    }
+
+    [Test]
+    public void Supply_AllowsMultipleDeliveries_ForSameSupplierAndStock()
+    {
+        var stock = new Stock { Quantity = 10 };
+        var supplier = new Supplier { Name = "VendorOne", Location = "Paris" };
+
+        var first = Supply.Create(stock, supplier, new DateTime(2024, 1, 1));
+        var second = Supply.Create(stock, supplier, new DateTime(2024, 2, 1));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stock.Supplies.Count, Is.EqualTo(2));
+            Assert.That(supplier.Supplies.Count, Is.EqualTo(2));
+            Assert.That(stock.Supplies, Does.Contain(first));
+            Assert.That(stock.Supplies, Does.Contain(second));
+        });
+    }
+
+    [Test]
+    public void Supply_StockCannotLinkToDifferentSupplier()
+    {
+        var stock = new Stock { Quantity = 5 };
+        var firstSupplier = new Supplier { Name = "Primary", Location = "Rome" };
+        var secondSupplier = new Supplier { Name = "Secondary", Location = "Milan" };
+
+        Supply.Create(stock, firstSupplier, new DateTime(2024, 3, 1));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            Supply.Create(stock, secondSupplier, new DateTime(2024, 3, 15)));
+    }
+
+    [Test]
+    public void Supply_Delete_DetachesFromStockAndSupplier()
+    {
+        var stock = new Stock { Quantity = 15 };
+        var supplier = new Supplier { Name = "Removable", Location = "Madrid" };
+        var supply = Supply.Create(stock, supplier, new DateTime(2024, 4, 1));
+
+        supply.Delete();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stock.Supplies, Does.Not.Contain(supply));
+            Assert.That(supplier.Supplies, Does.Not.Contain(supply));
+            Assert.That(stock.Supplier, Is.Null);
+            Assert.That(Supply.Extent, Does.Not.Contain(supply));
+        });
     }
 
     [Test]
