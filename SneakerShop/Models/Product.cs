@@ -29,8 +29,11 @@ namespace SneakerShop.Models
         private string _material;
         private decimal _price;
         private double? _rating;
+        private readonly List<Review> _reviews = new();
         
         public ProductCategory Category { get; set; }
+
+        public IReadOnlyList<Review> Reviews => _reviews.AsReadOnly();
 
         public string Name
         {
@@ -87,6 +90,30 @@ namespace SneakerShop.Models
                     throw new ArgumentOutOfRangeException(nameof(Rating), "Rating must be between 1 and 5.");
                 _rating = value;
             }
+        }
+
+        public void AddReview(Review review)
+        {
+            if (review == null) throw new ArgumentNullException(nameof(review));
+            _reviews.Add(review);
+        }
+
+        public double? GetRating()
+        {
+            if (_reviews.Count == 0)
+            {
+                Rating = null;
+                return Rating;
+            }
+
+            double total = 0;
+            foreach (var review in _reviews)
+            {
+                total += review.Rating;
+            }
+
+            Rating = total / _reviews.Count;
+            return Rating;
         }
         
         public virtual void AddProduct() { }

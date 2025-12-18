@@ -120,6 +120,11 @@ namespace SneakerShop.Models
         public decimal? Bonus { get; set; } = 0m;
 
         public decimal SalaryNow => BaseSalary + (Bonus ?? 0m);
+        
+        public decimal GetSalaryNow()
+        {
+            return BaseSalary + (Bonus ?? 0m);
+        }
 
         public int ClearanceLevel
         {

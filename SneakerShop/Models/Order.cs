@@ -27,6 +27,7 @@ namespace SneakerShop.Models
         public OrderStatus Status { get; set; }
         
         public decimal TotalAmount { get; private set; }
+        public Promocode? AppliedPromocode { get; private set; }
         
         private readonly List<Product> _products = new();
         public IReadOnlyList<Product> Products => _products.AsReadOnly();
@@ -64,17 +65,14 @@ namespace SneakerShop.Models
                 order._products.Add(p);
 
             customer.Cart.Clear();
-            order.CalculateTotal(promo);
+            order.ApplyPromocode(promo);
+            order.GetTotalAmount();
 
             return order;
         }
 
-        private void CalculateTotal(string? promocodeString)
+        private void ApplyPromocode(string? promocodeString)
         {
-            decimal sum = 0m;
-            foreach (var product in _products)
-                sum += product.Price;
-            
             if (!string.IsNullOrWhiteSpace(promocodeString))
             {
                 var promo = Promocode.Extent
@@ -83,20 +81,33 @@ namespace SneakerShop.Models
                 if (promo != null)
                 {
                     bool validDates =
-                        promo.StartDate <= DateTime.Now &&
-                        promo.EndDate >= DateTime.Now;
+                        promo.StartDate <= OrderDate &&
+                        promo.EndDate >= OrderDate;
 
                     if (validDates && promo.NumberOfUses > 0)
                     {
-                        decimal discountMultiplier = 1 - (promo.DiscountPercent / 100m);
-                        sum *= discountMultiplier;
-                        
+                        AppliedPromocode = promo;
                         promo.NumberOfUses--;
                     }
                 }
             }
 
+        }
+
+        public decimal GetTotalAmount()
+        {
+            decimal sum = 0m;
+            foreach (var product in _products)
+                sum += product.Price;
+
+            if (AppliedPromocode != null)
+            {
+                decimal discountMultiplier = 1 - (AppliedPromocode.DiscountPercent / 100m);
+                sum *= discountMultiplier;
+            }
+
             TotalAmount = sum;
+            return TotalAmount;
         }
 
         public void ChangeCustomer(Customer newCustomer)
