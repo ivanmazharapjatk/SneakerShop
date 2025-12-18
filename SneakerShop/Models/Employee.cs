@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace SneakerShop.Models
 {
-    public class Employee
+    public class Employee : ICustomerSupportAgent, ILogisticsCoordinator
     {
         // CLASS EXTENT FOR EMPLOYEE
         private static readonly List<Employee> _extent = new();
@@ -14,6 +14,18 @@ namespace SneakerShop.Models
         public IReadOnlyList<Employee> Subordinates => _subordinates.AsReadOnly();
         public Employee? Supervisor { get; private set; }
         
+        public string? ContactNumber { get; set; }
+        public void RespondToReview(Review review)
+        {
+            //TODO: method's logic
+        }
+
+        public List<Supply>? AssignedSupplies { get; set; }
+        public void AskForSupply(Supplier supplier)
+        {
+            //TODO: method's logic
+        }
+
         private const string ExtentFilePath = "EmployeeExtent.json";
 
         public static void ClearExtent()
@@ -132,7 +144,37 @@ namespace SneakerShop.Models
 
             _extent.Add(this);
         }
+        
+        public Employee(
+            string name,
+            string surname,
+            string position,
+            int clearanceLevel,
+            DateTime hireDate,
+            string contactNumber
+        ) : this(name, surname, position, clearanceLevel, hireDate)
+        {
+            if (string.IsNullOrWhiteSpace(contactNumber))
+                throw new ArgumentException("Customer support agent must have a contact number.");
 
+            ContactNumber = contactNumber;
+        }
+        
+        public Employee(
+            string name,
+            string surname,
+            string position,
+            int clearanceLevel,
+            DateTime hireDate,
+            List<Supply> assignedSupplies
+        ) : this(name, surname, position, clearanceLevel, hireDate)
+        {
+            AssignedSupplies = assignedSupplies ?? throw new ArgumentNullException(
+                nameof(assignedSupplies),
+                "Logistics coordinator must have an assigned supplies list."
+            );
+        }
+        
         public void AssignSupervisor(Employee supervisor)
         {
             if (supervisor == null) throw new ArgumentNullException(nameof(supervisor));
@@ -194,5 +236,6 @@ namespace SneakerShop.Models
 
             return false;
         }
+        
     }
 }

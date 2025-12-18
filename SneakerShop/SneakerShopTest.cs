@@ -192,10 +192,7 @@ public class SneakerShopUnitTests
     [Test]
     public void CustomerSupportAgent_Creation_Success()
     {
-        var agent = new CustomerSupportAgent
-        {
-            ContactNumber = "555-1234"
-        };
+        var agent = new Employee("Jan", "Kowalski", "Senior Support Agent", 2, new DateTime(2022, 1, 1), "555-1234");
 
         Assert.That(agent.ContactNumber, Is.EqualTo("555-1234"));
     }
@@ -206,7 +203,7 @@ public class SneakerShopUnitTests
         var stock = new Stock { Quantity = 50 };
         var supplier = new Supplier { Name = "Central Warehouse", Location = "Warsaw" };
         var supply = Supply.Create(stock, supplier, new DateTime(2024, 5, 10));
-        var coordinator = new LogisticsCoordinator();
+        var coordinator = new Employee("Jan", "Kowalski", "Senior Support Agent", 2, new DateTime(2022, 1, 1), new List<Supply>());
 
         coordinator.AssignedSupplies.Add(supply);
 
