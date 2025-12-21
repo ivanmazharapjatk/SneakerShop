@@ -1,69 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace SneakerShop.Models
 {
     public class Employee : ICustomerSupportAgent, ILogisticsCoordinator
     {
-        // CLASS EXTENT FOR EMPLOYEE
-        private static readonly List<Employee> _extent = new();
-        public static IReadOnlyList<Employee> Extent => _extent.AsReadOnly();
-        private readonly List<Employee> _subordinates = new();
-        public IReadOnlyList<Employee> Subordinates => _subordinates.AsReadOnly();
-        public Employee? Supervisor { get; private set; }
-        
-        public string? ContactNumber { get; set; }
-        public void RespondToReview(Review review)
-        {
-            //TODO: method's logic
-        }
-
-        public List<Supply>? AssignedSupplies { get; set; }
-        public void AskForSupply(Supplier supplier)
-        {
-            //TODO: method's logic
-        }
+        #region Constants
 
         private const string ExtentFilePath = "EmployeeExtent.json";
 
-        public static void ClearExtent()
-        {
-            foreach (var employee in _extent)
-            {
-                employee._subordinates.Clear();
-                employee.Supervisor = null;
-            }
-            _extent.Clear();
-        }
+        #endregion
         
-        // Saves the class extent of Employee to a JSON file
-        public static void SaveExtent()
-        {
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-
-            var json = JsonSerializer.Serialize(_extent, options);
-            File.WriteAllText(ExtentFilePath, json);
-        }
+        #region Extent Fields
         
-        // Loads the class extent of Employee from a JSON file
-        public static void LoadExtent()
-        {
-            if (!File.Exists(ExtentFilePath))
-            {
-                return;
-            }
-
-            ClearExtent();
-
-            var json = File.ReadAllText(ExtentFilePath);
-
-            var _ = JsonSerializer.Deserialize<List<Employee>>(json);
-        }
+        private static readonly List<Employee> _extent = new();
+        public static IReadOnlyList<Employee> Extent => _extent.AsReadOnly();
+        
+        #endregion
+        
+        #region Class Fields
+        
+        private readonly List<Employee> _subordinates = new();
 
         private string _name;
         private string _surname;
@@ -71,7 +27,54 @@ namespace SneakerShop.Models
         private int _clearanceLevel;
         private DateTime _hireDate;
 
-        public static decimal BaseSalary { get; set; } = 2500m;
+        #endregion
+        
+        #region Constructors
+        
+        public Employee(string name, string surname, string position, int clearanceLevel, DateTime hireDate)
+        {
+            Name = name;
+            Surname = surname;
+            Position = position;
+            ClearanceLevel = clearanceLevel;
+            HireDate = hireDate;
+
+            _extent.Add(this);
+        }
+        
+        public Employee(
+            string name,
+            string surname,
+            string position,
+            int clearanceLevel,
+            DateTime hireDate,
+            string contactNumber
+        ) : this(name, surname, position, clearanceLevel, hireDate)
+        {
+            if (string.IsNullOrWhiteSpace(contactNumber))
+                throw new ArgumentException("Customer support agent must have a contact number.");
+
+            ContactNumber = contactNumber;
+        }
+        
+        public Employee(
+            string name,
+            string surname,
+            string position,
+            int clearanceLevel,
+            DateTime hireDate,
+            List<Supply> assignedSupplies
+        ) : this(name, surname, position, clearanceLevel, hireDate)
+        {
+            AssignedSupplies = assignedSupplies ?? throw new ArgumentNullException(
+                nameof(assignedSupplies),
+                "Logistics coordinator must have an assigned supplies list."
+            );
+        }
+        
+        #endregion
+        
+        #region Attribute Properties and Validation
 
         public string Name
         {
@@ -117,10 +120,11 @@ namespace SneakerShop.Models
             }
         }
 
+        public static decimal BaseSalary { get; set; } = 2500m;
         public decimal? Bonus { get; set; } = 0m;
-
         public decimal SalaryNow => BaseSalary + (Bonus ?? 0m);
         
+        //Unused getter (?)
         public decimal GetSalaryNow()
         {
             return BaseSalary + (Bonus ?? 0m);
@@ -138,47 +142,54 @@ namespace SneakerShop.Models
                 _clearanceLevel = value;
             }
         }
+        public List<Supply>? AssignedSupplies { get; set; }
+        public string? ContactNumber { get; set; }
+        
+        #endregion
 
-        public Employee(string name, string surname, string position, int clearanceLevel, DateTime hireDate)
+        #region Persistence Logic
+        
+        public static void SaveExtent()
         {
-            Name = name;
-            Surname = surname;
-            Position = position;
-            ClearanceLevel = clearanceLevel;
-            HireDate = hireDate;
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
 
-            _extent.Add(this);
+            var json = JsonSerializer.Serialize(_extent, options);
+            File.WriteAllText(ExtentFilePath, json);
         }
         
-        public Employee(
-            string name,
-            string surname,
-            string position,
-            int clearanceLevel,
-            DateTime hireDate,
-            string contactNumber
-        ) : this(name, surname, position, clearanceLevel, hireDate)
+        public static void LoadExtent()
         {
-            if (string.IsNullOrWhiteSpace(contactNumber))
-                throw new ArgumentException("Customer support agent must have a contact number.");
+            if (!File.Exists(ExtentFilePath))
+            {
+                return;
+            }
 
-            ContactNumber = contactNumber;
+            ClearExtent();
+
+            var json = File.ReadAllText(ExtentFilePath);
+
+            var _ = JsonSerializer.Deserialize<List<Employee>>(json);
         }
         
-        public Employee(
-            string name,
-            string surname,
-            string position,
-            int clearanceLevel,
-            DateTime hireDate,
-            List<Supply> assignedSupplies
-        ) : this(name, surname, position, clearanceLevel, hireDate)
+        public static void ClearExtent()
         {
-            AssignedSupplies = assignedSupplies ?? throw new ArgumentNullException(
-                nameof(assignedSupplies),
-                "Logistics coordinator must have an assigned supplies list."
-            );
+            foreach (var employee in _extent)
+            {
+                employee._subordinates.Clear();
+                employee.Supervisor = null;
+            }
+            _extent.Clear();
         }
+        
+        #endregion
+        
+        #region Supervision Association
+        
+        public IReadOnlyList<Employee> Subordinates => _subordinates.AsReadOnly();
+        public Employee? Supervisor { get; private set; }
         
         public void AssignSupervisor(Employee supervisor)
         {
@@ -242,5 +253,20 @@ namespace SneakerShop.Models
             return false;
         }
         
+        #endregion
+
+        #region Inheritance Implementation
+
+        public void RespondToReview(Review review)
+        {
+            //TODO: method's logic
+        }
+        
+        public void AskForSupply(Supplier supplier)
+        {
+            //TODO: method's logic
+        }
+
+        #endregion
     }
 }
