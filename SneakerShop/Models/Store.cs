@@ -6,17 +6,39 @@ namespace SneakerShop.Models
 {
     public class Store
     {
+        #region Constants
+        
+        private const string ExtentFilePath = "StoreExtent.json";
+        
+        #endregion
+        
+        #region Extent Fields
+        
         private static readonly List<Store> _extent = new();
         public static IReadOnlyList<Store> Extent => _extent.AsReadOnly();
-        private const string ExtentFilePath = "StoreExtent.json";
+        
+        #endregion
+        
+        #region Class Fields
+        
         public string Name { get; set; }
         public string Address { get; set; }
         
-        public static void ClearExtent()
+        #endregion
+        
+        #region Constructors
+        
+        public Store(string name, string address)
         {
-            _extent.Clear();
+            Name = name;
+            Address = address;
+            _extent.Add(this);
         }
-
+        
+        #endregion
+        
+        #region Persistence Logic
+        
         public static void SaveExtent()
         {
             var options = new JsonSerializerOptions
@@ -41,12 +63,14 @@ namespace SneakerShop.Models
         
             _ = JsonSerializer.Deserialize<List<Store>>(json);
         }
-
-        public Store(string name, string address)
+        
+        public static void ClearExtent()
         {
-            Name = name;
-            Address = address;
-            _extent.Add(this);
+            _extent.Clear();
         }
+        
+        #endregion
+        
+        //TODO: Implement the associations
     }
 }
