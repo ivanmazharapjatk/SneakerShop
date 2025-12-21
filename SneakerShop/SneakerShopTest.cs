@@ -795,12 +795,7 @@ public class SneakerShopUnitTests
     [Test]
     public void Collection_Creation_Success()
     {
-        var collection = new Collection
-        {
-            Name = "Originals",
-            Brand = "Adidas",
-            Description = "Classic line"
-        };
+        var collection = new Collection("Originals", "Adidas", "Classic Line");
 
         Assert.Multiple(() =>
         {
