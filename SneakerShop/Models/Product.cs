@@ -4,26 +4,16 @@ namespace SneakerShop.Models
 {
     public abstract class Product
     {
+        #region Extent Fields
+        
         // CLASS EXTENT FOR ALL PRODUCTS (all subclasses)
         private static readonly List<Product> _extent = new();
         public static IReadOnlyList<Product> Extent => _extent.AsReadOnly();
 
-        public static void ClearExtent()
-        {
-            _extent.Clear();
-        }
-
-        protected internal static void RemoveFromExtent(Product product)
-        {
-            if (product == null) throw new ArgumentNullException(nameof(product));
-            _extent.Remove(product);
-        }
-
-        protected Product()
-        {
-            _extent.Add(this);
-        }
-
+        #endregion
+        
+        #region Class Fields
+        
         private string _name;
         private string _color;
         private string _material;
@@ -31,9 +21,35 @@ namespace SneakerShop.Models
         private double? _rating;
         private readonly List<Review> _reviews = new();
         
-        public ProductCategory Category { get; set; }
+        #endregion
+        
+        #region Constructors
+        
+        protected Product()
+        {
+            _extent.Add(this);
+        }
+        
+        #endregion
+        
+        #region Persistence Logic
+        
+        //IMPORTANT: We don't have a ProductExtent.json file since it's an abstract class and we only
+        //extent instances of classes following it (such as Accessory and Sneaker).
+        protected internal static void RemoveFromExtent(Product product)
+        {
+            if (product == null) throw new ArgumentNullException(nameof(product));
+            _extent.Remove(product);
+        }
 
-        public IReadOnlyList<Review> Reviews => _reviews.AsReadOnly();
+        public static void ClearExtent()
+        {
+            _extent.Clear();
+        }
+        
+        #endregion
+        
+        #region Attribute Properties and Validation
 
         public string Name
         {
@@ -91,7 +107,15 @@ namespace SneakerShop.Models
                 _rating = value;
             }
         }
+        
+        public ProductCategory Category { get; set; }
 
+        #endregion
+        
+        #region Product-Review Association
+        
+        public IReadOnlyList<Review> Reviews => _reviews.AsReadOnly();
+        
         public void AddReview(Review review)
         {
             if (review == null) throw new ArgumentNullException(nameof(review));
@@ -116,6 +140,10 @@ namespace SneakerShop.Models
             return Rating;
         }
         
+        #endregion
+        
+        #region Customer-Product Association
+        
         public virtual void AddProduct() { }
 
         public virtual void AddProductToWishList(Customer customer)
@@ -127,5 +155,9 @@ namespace SneakerShop.Models
         {
             customer.Cart.Add(this);
         }
+        
+        #endregion
+        
+        //TODO: Fix association logic
     }
 }
