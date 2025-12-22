@@ -7,47 +7,46 @@ namespace SneakerShop.Models;
 
 public class Promocode
 {
+    #region Constants
+    
+    private const string ExtentFilePath = "PromocodeExtent.json";
+    
+    #endregion
+    
+    #region Extent Fields
+    
     private static readonly List<Promocode> _extent = new();
     public static IReadOnlyList<Promocode> Extent => _extent.AsReadOnly();
 
-    private const string ExtentFilePath = "PromocodeExtent.json";
-
-    public static void ClearExtent()
-    {
-        _extent.Clear();
-    }
-
-    public static void SaveExtent()
-    {
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true
-        };
-
-        var json = JsonSerializer.Serialize(_extent, options);
-        File.WriteAllText(ExtentFilePath, json);
-    }
-
-    public static void LoadExtent()
-    {
-        if (!File.Exists(ExtentFilePath))
-        {
-            return;
-        }
-
-        ClearExtent();
-
-        var json = File.ReadAllText(ExtentFilePath);
-        
-        _ = JsonSerializer.Deserialize<List<Promocode>>(json);
-    }
+    #endregion
+    
+    #region Class Fields
     
     private string _code;
     private int _numberOfUses;
     private decimal _discountPercent;
     private DateTime _startDate;
     private DateTime _endDate;
-
+    
+    #endregion
+    
+    #region Constructors
+    
+    public Promocode(string code, int numberOfUses, decimal discountPercent, DateTime startDate, DateTime endDate)
+    {
+        Code = code;
+        NumberOfUses = numberOfUses;
+        DiscountPercent = discountPercent;
+        StartDate = startDate;
+        EndDate = endDate;
+        
+        _extent.Add(this);
+    }
+    
+    #endregion
+    
+    #region Attribute Properties and Validation
+    
     public string Code
     {
         get => _code;
@@ -117,15 +116,42 @@ public class Promocode
             _endDate = value;
         }
     }
-
-    public Promocode(string code, int numberOfUses, decimal discountPercent, DateTime startDate, DateTime endDate)
+    
+    #endregion
+    
+    #region Persistence Logic
+    
+    public static void SaveExtent()
     {
-        Code = code;
-        NumberOfUses = numberOfUses;
-        DiscountPercent = discountPercent;
-        StartDate = startDate;
-        EndDate = endDate;
-        
-        _extent.Add(this);
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        var json = JsonSerializer.Serialize(_extent, options);
+        File.WriteAllText(ExtentFilePath, json);
     }
+
+    public static void LoadExtent()
+    {
+        if (!File.Exists(ExtentFilePath))
+        {
+            return;
+        }
+
+        ClearExtent();
+
+        var json = File.ReadAllText(ExtentFilePath);
+        
+        _ = JsonSerializer.Deserialize<List<Promocode>>(json);
+    }
+    
+    public static void ClearExtent()
+    {
+        _extent.Clear();
+    }
+    
+    #endregion
+    
+    //TODO: All required associations.
 }

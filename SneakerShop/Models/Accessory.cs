@@ -9,16 +9,53 @@ namespace SneakerShop.Models;
 
 public class Accessory : Product
 {
-    // CLASS EXTENT FOR ACCESSORY
+    #region Constants
+
+    private const string ExtentFilePath = "AccessoryExtent.json";
+
+    #endregion
+    
+    #region Extent Fields
+    
     private static readonly List<Accessory> _extent = new();
     public static IReadOnlyList<Accessory> Extent => _extent.AsReadOnly();
     
-    private const string ExtentFilePath = "AccessoryExtent.json";
-
-    public static void ClearExtent()
+    #endregion
+    
+    #region Class Fields
+    
+    private string _type;
+    
+    #endregion
+    
+    #region Constructors
+    
+    public Accessory(
+        string name,
+        decimal price,
+        ProductCategory category,
+        bool available,
+        string color,
+        string material,
+        string type,
+        Product[]? compatibilities = null
+    ) : base()
     {
-        _extent.Clear();
+        Name = name;
+        Price = price;
+        Category = category;
+        Available = available;
+        Color = color;
+        Material = material;
+        Type = type;
+        Compatibilities = compatibilities ?? Array.Empty<Product>();
+
+        _extent.Add(this);
     }
+    
+    #endregion
+    
+    #region Persistence Logic
     
     public static void SaveExtent()
     {
@@ -45,8 +82,15 @@ public class Accessory : Product
         
         var _ = JsonSerializer.Deserialize<List<Accessory>>(json);
     }
-
-    private string _type;
+    
+    public static void ClearExtent()
+    {
+        _extent.Clear();
+    }
+    
+    #endregion
+    
+    #region Attribute Properties and Validation
 
     public string Type
     {
@@ -59,29 +103,13 @@ public class Accessory : Product
         }
     }
     
-    [JsonIgnore]
-    public Product[] Compatibilities { get; set; } = Array.Empty<Product>();
-
-    public Accessory(
-        string name,
-        decimal price,
-        ProductCategory category,
-        bool available,
-        string color,
-        string material,
-        string type,
-        Product[]? compatibilities = null
-    ) : base()
-    {
-        Name = name;
-        Price = price;
-        Category = category;
-        Available = available;
-        Color = color;
-        Material = material;
-        Type = type;
-        Compatibilities = compatibilities ?? Array.Empty<Product>();
-
-        _extent.Add(this);
-    }
+    #endregion
+    
+    #region Compatibility Association
+    
+    [JsonIgnore] public Product[] Compatibilities { get; set; } = Array.Empty<Product>();
+    
+    #endregion
+    
+    //TODO: Finish Compatibility Association (reverse function specifically). Add Brand association as well.
 }
