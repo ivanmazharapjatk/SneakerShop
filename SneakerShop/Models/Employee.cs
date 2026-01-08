@@ -29,6 +29,38 @@ namespace SneakerShop.Models
 
         #endregion
         
+        #region Role Inheritance Fields
+        
+        public enum EmployeeRole
+        {
+            None,
+            CustomerSupportAgent,
+            LogisticsCoordinator
+        }
+
+        private EmployeeRole _currentRole = EmployeeRole.None;
+        public EmployeeRole CurrentRole
+        {
+            get => _currentRole;
+            set
+            {
+                if (value == EmployeeRole.None)
+                    throw new ArgumentException("Employee must have exactly one role.");
+
+                if (value != EmployeeRole.CustomerSupportAgent && value != EmployeeRole.LogisticsCoordinator)
+                    throw new ArgumentException("Role must be CustomerSupportAgent or LogisticsCoordinator.");
+
+                if (_currentRole != value)
+                {
+                    ClearRoleData(_currentRole);
+                    _currentRole = value;
+                    InitializeRoleData(_currentRole);
+                }
+            }
+        }
+
+        #endregion
+        
         #region Constructors
         
         public Employee(string name, string surname, string position, int clearanceLevel, DateTime hireDate)
@@ -38,7 +70,7 @@ namespace SneakerShop.Models
             Position = position;
             ClearanceLevel = clearanceLevel;
             HireDate = hireDate;
-
+            
             _extent.Add(this);
         }
         
@@ -54,6 +86,7 @@ namespace SneakerShop.Models
             if (string.IsNullOrWhiteSpace(contactNumber))
                 throw new ArgumentException("Customer support agent must have a contact number.");
 
+            CurrentRole = EmployeeRole.CustomerSupportAgent;
             ContactNumber = contactNumber;
         }
         
@@ -66,6 +99,7 @@ namespace SneakerShop.Models
             List<Supply> assignedSupplies
         ) : this(name, surname, position, clearanceLevel, hireDate)
         {
+            CurrentRole = EmployeeRole.LogisticsCoordinator;
             AssignedSupplies = assignedSupplies ?? throw new ArgumentNullException(
                 nameof(assignedSupplies),
                 "Logistics coordinator must have an assigned supplies list."
@@ -256,14 +290,46 @@ namespace SneakerShop.Models
         #endregion
 
         #region Inheritance Implementation
+        
+        private void InitializeRoleData(EmployeeRole role)
+        {
+            switch (role)
+            {
+                case EmployeeRole.CustomerSupportAgent:
+                    ContactNumber = "Unknown";
+                    break;
+                case EmployeeRole.LogisticsCoordinator:
+                    AssignedSupplies = new List<Supply>();
+                    break;
+            }
+        }
 
+        
+        private void ClearRoleData(EmployeeRole role)
+        {
+            switch (role)
+            {
+                case EmployeeRole.CustomerSupportAgent:
+                    ContactNumber = null;
+                    break;
+                case EmployeeRole.LogisticsCoordinator:
+                    AssignedSupplies = null;
+                    break;
+            }
+        }
+
+        
         public void RespondToReview(Review review)
         {
+            if (CurrentRole != EmployeeRole.CustomerSupportAgent)
+                throw new InvalidOperationException("Employee is not a Customer Support Agent.");
             //TODO: method's logic
         }
         
         public void AskForSupply(Supplier supplier)
         {
+            if (CurrentRole != EmployeeRole.LogisticsCoordinator)
+                throw new InvalidOperationException("Employee is not a Logistics Coordinator.");
             //TODO: method's logic
         }
 
