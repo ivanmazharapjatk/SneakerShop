@@ -158,6 +158,25 @@ namespace SneakerShop.Models
         
         #endregion
         
+        #region Product Type Inheritance
+        
+        public WinterizedProduct? WinterizedDetails { get; set; }
+        public WaterProofProduct? WaterproofDetails { get; set; }
+        public SummerProduct? SummerDetails { get; set; }
+        
+        public bool IsWinterized => WinterizedDetails != null;
+        public bool IsWaterproof => WaterproofDetails != null;
+        public bool IsSummerProduct => SummerDetails != null;
+        
+        // Validation given that we have Overlapping, COMPLETE inheritance
+        public void ValidateFeatures()
+        {
+            if (!IsWinterized && !IsWaterproof && !IsSummerProduct)
+                throw new InvalidOperationException("Product must have at least one feature (Winterized, Waterproof, SummerProduct).");
+        }
+        
+        #endregion
+        
         //TODO: Fix association logic
     }
 }
