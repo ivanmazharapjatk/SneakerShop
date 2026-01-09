@@ -1,26 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace SneakerShop.Models
+﻿namespace SneakerShop.Models
 {
     public class Brand
     {
+        #region Extent Fields
+        
         private static readonly List<Brand> _extent = new();
         public static IReadOnlyList<Brand> Extent => _extent.AsReadOnly();
 
-        private readonly List<Sneaker> _sneakers = new();
-        public IReadOnlyList<Sneaker> Sneakers => _sneakers.AsReadOnly();
-
+        #endregion
+        
+        #region Class Fields
+        
         public string Name { get; set; }
         public string Description { get; set; }
         public List<string> Collections { get; set; } = new();
         public string CountryOfOrigin { get; set; }
 
-        public Brand()
+        #endregion
+        
+        #region Constructors
+        
+        public Brand(string name, string description, string countryOfOrigin)
         {
+            Name = name;
+            Description = description;
+            CountryOfOrigin = countryOfOrigin;
+            
             _extent.Add(this);
         }
+        
+        public Brand() //this is a temporary empty constructor since I don't want to break old unit tests that use it
+        {
+            throw new NotImplementedException();
+        } 
 
+        #endregion
+        
+        #region Sneaker Association 
+        
+        private readonly List<Sneaker> _sneakers = new();
+
+        public IReadOnlyList<Sneaker> Sneakers => _sneakers.AsReadOnly();
+        
         public void AddSneaker(Sneaker sneaker)
         {
             if (sneaker == null) throw new ArgumentNullException(nameof(sneaker));
@@ -62,5 +83,9 @@ namespace SneakerShop.Models
             Sneaker.ClearExtent();
             _extent.Clear();
         }
+        
+        #endregion
+        
+        //TODO: Persistence file for this class and attribute logic validation. Also fix the association obviously.
     }
 }
