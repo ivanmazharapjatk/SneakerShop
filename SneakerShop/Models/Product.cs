@@ -1,4 +1,5 @@
-﻿using SneakerShop.Enums;
+﻿using System.ComponentModel.DataAnnotations;
+using SneakerShop.Enums;
 
 namespace SneakerShop.Models
 {
@@ -21,6 +22,12 @@ namespace SneakerShop.Models
         private double? _rating;
         private readonly List<Review> _reviews = new();
         
+        // Flattened specialized fields
+        private int? _breathabilityScore;
+        private int? _insulationLevel;
+        private string? _tractionGrade;
+        private int? _waterColumnMm;
+        private string? _membraneType;
         #endregion
         
         #region Constructors
@@ -158,23 +165,58 @@ namespace SneakerShop.Models
         
         #endregion
         
-        #region Product Type Inheritance
+        #region Overlapping Type Flags
         
-        public WinterizedProduct? WinterizedDetails { get; set; }
-        public WaterProofProduct? WaterproofDetails { get; set; }
-        public SummerProduct? SummerDetails { get; set; }
+        public bool IsSummer { get; set; }
+        public bool IsWinterized { get; set; }
+        public bool IsWaterproof { get; set; }
         
-        public bool IsWinterized => WinterizedDetails != null;
-        public bool IsWaterproof => WaterproofDetails != null;
-        public bool IsSummerProduct => SummerDetails != null;
+        #endregion
         
-        // Validation given that we have Overlapping, COMPLETE inheritance
-        public void ValidateFeatures()
-        {
-            if (!IsWinterized && !IsWaterproof && !IsSummerProduct)
-                throw new InvalidOperationException("Product must have at least one feature (Winterized, Waterproof, SummerProduct).");
+        #region Flattened Attributes for Product Type
+        
+        // Summer Traits
+        public int? BreathabilityScore 
+        { 
+            get => _breathabilityScore; 
+            set => _breathabilityScore = value; 
+        }
+
+        // Winterized Traits
+        public int? InsulationLevel 
+        { 
+            get => _insulationLevel; 
+            set => _insulationLevel = value; 
+        }
+        public string? TractionGrade 
+        { 
+            get => _tractionGrade; 
+            set => _tractionGrade = value; 
+        }
+
+        // Waterproof Traits
+        public int? WaterColumnMm 
+        { 
+            get => _waterColumnMm; 
+            set => _waterColumnMm = value; 
+        }
+        public string? MembraneType 
+        { 
+            get => _membraneType; 
+            set => _membraneType = value; 
         }
         
+        public virtual void ValidateProductState()
+        {
+            if (IsSummer && !BreathabilityScore.HasValue)
+                throw new ValidationException("Summer products must have a Breathability Score.");
+
+            if (IsWinterized && (!InsulationLevel.HasValue || string.IsNullOrEmpty(TractionGrade)))
+                throw new ValidationException("Winterized products require Insulation Level and Traction Grade.");
+
+            if (IsWaterproof && (!WaterColumnMm.HasValue || string.IsNullOrEmpty(MembraneType)))
+                throw new ValidationException("Waterproof products require Water Column depth and Membrane Type.");
+        }
         #endregion
         
         //TODO: Fix association logic
